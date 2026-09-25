@@ -1,6 +1,10 @@
 # discord-bot
 
-Simple “bot” powered by GitHub Actions to send low-volume Discord messages when notable things happen on your GitHub repo. Posts to a Discord channel when:
+Simple “bot” powered by GitHub Actions to send low-volume Discord messages when notable things happen on your GitHub repo.
+
+![Screenshot](screenshot.png)
+
+Posts to a Discord channel when:
 
 - An issue is opened
 - A pull request is opened (or marked ready for review)
