@@ -1,0 +1,33 @@
+name: Discord notifications
+description: Post new issues, pull requests, and releases to a Discord channel
+inputs:
+  webhook-url:
+    description: Discord webhook URL for the channel; store it as a secret
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Build Discord message
+      shell: bash
+      run: |
+        jq --arg event "$GITHUB_EVENT_NAME" \
+          --from-file "$GITHUB_ACTION_PATH/message.jq" \
+          "$GITHUB_EVENT_PATH" > "$RUNNER_TEMP/discord.json"
+
+    - name: Send to Discord
+      shell: bash
+      env:
+        WEBHOOK: ${{ inputs.webhook-url }}
+      run: |
+        if [ ! -s "$RUNNER_TEMP/discord.json" ]; then
+          echo "Skipping: draft or bot pull request"
+          exit 0
+        fi
+        if [ -z "$WEBHOOK" ]; then
+          echo "::error::webhook-url is empty; is the secret set, and is this a pull_request event from a fork?"
+          exit 1
+        fi
+        curl --fail-with-body --silent --show-error \
+          --header "Content-Type: application/json" \
+          --data "@${RUNNER_TEMP}/discord.json" \
+          "$WEBHOOK"
