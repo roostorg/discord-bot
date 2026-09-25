@@ -50,11 +50,14 @@ You can omit any triggers you don't want; e.g. `release` if you only care about 
 
 ## Security
 
-This action uses `pull_request_target` so that PRs from forks can read the webhook secret; with plain `pull_request`, fork PRs don't get secrets and the post would fail.
+This action uses `pull_request_target` so that the workflow running on PRs from forks can use the webhook secret; with plain `pull_request`, workflows running on fork PRs don't get secrets and the post would fail.
 
-`pull_request_target` runs with access to your repo's secrets, so it's only safe because this workflow **never checks out or runs code from the PR** (and PRs always run the workflow from `main` so a malicious PR cannot expose secrets). Do not add `actions/checkout` or other steps that run PR code to this workflow. If you need those, put them in a separate workflow.
+`pull_request_target` runs with access to your repo's secrets, so it's only safe because this workflow **never checks out or runs code from the PR** (and PRs always run the workflow from `main` so a malicious PR cannot expose secrets).
 
-The workflow needs no GitHub token permissions (`permissions: {}`); the action only reads the event payload and posts to Discord.
+> [!CAUTION]
+> **Do not add `actions/checkout` or other steps that run PR code to this workflow.** If you need those, put them in a separate workflow.
+
+The workflow needs no GitHub token permissions; it only reads the event payload and posts to Discord.
 
 ## Known limitations
 
