@@ -12,8 +12,9 @@ Posts to a Discord channel when:
 
 Filters out bots. Uses the GitHub user's username and avatar where possible for nice attribution/integration, especially when contributors use a similar identity across platforms.
 
-> [!INFO]
-> **Why not native GitHub → Discord webhooks?** GitHub webhooks don't support the level of granularity we want; they're essentially all-or-nothing for different scopes. Instead, this Action focuses on the events worth sending a message about to a project channel, while still not requiring a extra infra. 
+> [!NOTE]
+> **Why not native GitHub → Discord webhooks?**
+> GitHub webhooks don't support the level of granularity we want; they're essentially all-or-nothing for different scopes. Instead, this Action focuses on the events worth sending a message about to a project channel, while still not requiring a extra infra. 
 
 ## Setup
 
