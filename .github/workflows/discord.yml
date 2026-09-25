@@ -25,7 +25,7 @@ jobs:
             def clean: (. // "") | gsub("\r"; "") | gsub("<!--[\\s\\S]*?-->"; "") | gsub("\n{3,}"; "\n\n") | gsub("^\\s+|\\s+$"; "");
             def author($user): {name: $user.login, url: $user.html_url, icon_url: $user.avatar_url};
             def embed($title; $suffix; $item; $user; $length; $color): {
-              title: ("**\($title | truncate(200))** \($suffix)"),
+              title: ("\($title | truncate(200)) • \($suffix)"),
               url: $item.html_url,
               author: author($user),
               description: ($item.body | clean | truncate($length)),
