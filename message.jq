@@ -17,12 +17,12 @@ def message($title; $suffix; $item; $user; $length; $color): sender($user) + {
   allowed_mentions: {parse: []}
 };
 
-# Colors match GitHub: open green and release blue
+# Colors from GitHub's palette: open green, in-progress yellow, and release blue
 if $event == "issues" then
   message(.issue.title; "#\(.issue.number) (Issue)"; .issue; .issue.user; 500; 2066493)
 elif $event == "pull_request_target" or $event == "pull_request" then
   if .pull_request.draft or .pull_request.user.type == "Bot" then empty
-  else message(.pull_request.title; "#\(.pull_request.number) (PR)"; .pull_request; .pull_request.user; 500; 2066493) end
+  else message(.pull_request.title; "#\(.pull_request.number) (PR)"; .pull_request; .pull_request.user; 500; 10118912) end
 elif $event == "release" then
   (.release.name // "" | if . == "" then null else . end) as $name
   | message($name // .release.tag_name;
