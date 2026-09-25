@@ -4,18 +4,27 @@
 
 def truncate($n): if length > $n then .[:$n - 1] + "…" else . end;
 def clean: (. // "") | gsub("\r"; "") | gsub("<!--[\\s\\S]*?-->"; "") | gsub("\n{3,}"; "\n\n") | gsub("^\\s+|\\s+$"; "");
+# Keep titles literal inside the markdown link
+def escape: gsub("(?<c>[\\\\*_~`|\\[\\]<>])"; "\\\(.c)");
 # Discord rejects webhook names containing these, so fall back to the webhook default
 def sender($user): {avatar_url: $user.avatar_url}
   + if $user.login | test("discord|clyde"; "i") then {} else {username: "@\($user.login) • GitHub"} end;
-def message($title; $suffix; $item; $user; $length; $color): sender($user) + {
-  embeds: [{
-    title: ("\($title | truncate(200)) • \($suffix)"),
-    url: $item.html_url,
-    description: ($item.body | clean | truncate($length)),
-    color: $color
-  } | if .description == "" then del(.description) else . end],
-  allowed_mentions: {parse: []}
-};
+# Components instead of embeds so posts still show for people with embeds turned off
+def message($title; $suffix; $item; $user; $length; $color):
+  ($item.body | clean | truncate($length)) as $body
+  | sender($user) + {
+    flags: 32768,
+    components: [{
+      type: 17,
+      accent_color: $color,
+      components: [{
+        type: 10,
+        content: ("### [\($title | truncate(200) | escape) • \($suffix)](\($item.html_url))"
+          + if $body == "" then "" else "\n\($body)" end)
+      }]
+    }],
+    allowed_mentions: {parse: []}
+  };
 
 # Colors from GitHub's palette: open green, in-progress yellow, and release blue
 if $event == "issues" then

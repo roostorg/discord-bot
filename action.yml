@@ -30,4 +30,4 @@ runs:
         curl --fail-with-body --silent --show-error \
           --header "Content-Type: application/json" \
           --data "@${RUNNER_TEMP}/discord.json" \
-          "$WEBHOOK"
+          "${WEBHOOK}?with_components=true"
