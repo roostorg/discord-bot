@@ -1,0 +1,29 @@
+name: Discord
+
+on:
+  issues:
+    types: [opened]
+  pull_request_target:
+    types: [opened, ready_for_review]
+  release:
+    types: [published]
+
+permissions: {}
+
+jobs:
+  notify:
+    # Safe with pull_request_target only because nothing here checks out or runs PR code
+    if: >-
+      github.event_name != 'pull_request_target' ||
+      (!github.event.pull_request.draft && github.event.pull_request.user.type != 'Bot')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Forward event to Discord
+        env:
+          WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          curl --fail --silent --show-error \
+            --header "Content-Type: application/json" \
+            --header "X-GitHub-Event: ${GITHUB_EVENT_NAME%_target}" \
+            --data "@${GITHUB_EVENT_PATH}" \
+            "${WEBHOOK}/github"
