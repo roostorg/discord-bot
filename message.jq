@@ -6,7 +6,7 @@ def truncate($n): if length > $n then .[:$n - 1] + "…" else . end;
 def clean: (. // "") | gsub("\r"; "") | gsub("<!--[\\s\\S]*?-->"; "") | gsub("\n{3,}"; "\n\n") | gsub("^\\s+|\\s+$"; "");
 # Discord rejects webhook names containing these, so fall back to the webhook default
 def sender($user): {avatar_url: $user.avatar_url}
-  + if $user.login | test("discord|clyde"; "i") then {} else {username: "@\($user.login) (GitHub)"} end;
+  + if $user.login | test("discord|clyde"; "i") then {} else {username: "@\($user.login) • GitHub"} end;
 def message($title; $suffix; $item; $user; $length; $color): sender($user) + {
   embeds: [{
     title: ("\($title | truncate(200)) • \($suffix)"),
