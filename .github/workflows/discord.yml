@@ -18,12 +18,40 @@ jobs:
       (!github.event.pull_request.draft && github.event.pull_request.user.type != 'Bot')
     runs-on: ubuntu-latest
     steps:
-      - name: Forward event to Discord
+      - name: Build Discord message
+        run: |
+          jq --arg event "$GITHUB_EVENT_NAME" '
+            def truncate($n): if length > $n then .[:$n - 1] + "…" else . end;
+            def clean: (. // "") | gsub("\r"; "") | gsub("<!--[\\s\\S]*?-->"; "") | gsub("\n{3,}"; "\n\n") | trim;
+            def author($user): {name: $user.login, url: $user.html_url, icon_url: $user.avatar_url};
+            def embed($title; $suffix; $item; $user; $length; $color): {
+              title: ("**\($title | truncate(200))** \($suffix)"),
+              url: $item.html_url,
+              author: author($user),
+              description: ($item.body | clean | truncate($length)),
+              color: $color
+            } | if .description == "" then del(.description) else . end;
+
+            # Colors match GitHub: open green and release blue
+            (if $event == "issues" then
+              embed(.issue.title; "#\(.issue.number) (Issue)"; .issue; .issue.user; 500; 2066493)
+            elif $event == "pull_request_target" then
+              embed(.pull_request.title; "#\(.pull_request.number) (PR)"; .pull_request; .pull_request.user; 500; 2066493)
+            elif $event == "release" then
+              (.release.name // "" | if . == "" then null else . end) as $name
+              | embed($name // .release.tag_name;
+                  ((if $name != null and $name != .release.tag_name then "\(.release.tag_name) " else "" end)
+                    + (if .release.prerelease then "(Pre-release)" else "(Release)" end));
+                  .release; .release.author; 2000; 616922)
+            else error("Unsupported event: \($event)") end) as $embed
+            | {embeds: [$embed], allowed_mentions: {parse: []}}
+          ' "$GITHUB_EVENT_PATH" > "$RUNNER_TEMP/discord.json"
+
+      - name: Send to Discord
         env:
           WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
         run: |
-          curl --fail --silent --show-error \
+          curl --fail-with-body --silent --show-error \
             --header "Content-Type: application/json" \
-            --header "X-GitHub-Event: ${GITHUB_EVENT_NAME%_target}" \
-            --data "@${GITHUB_EVENT_PATH}" \
-            "${WEBHOOK}/github"
+            --data "@${RUNNER_TEMP}/discord.json" \
+            "$WEBHOOK"
