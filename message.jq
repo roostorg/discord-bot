@@ -41,11 +41,12 @@ elif $event == "release" then
         + (if .release.prerelease then "(Pre-release)" else "(Release)" end));
       .release; .release.author; 2000; 616922)
 elif $event == "repository_advisory" then
-  # Advisories may be unpublished: post only the ID, title, severity and link,
-  # never the description, affected code or reporter.
+  # Advisories may be unpublished: post only the ID, state, severity and link,
+  # never the title, description, affected code or reporter.
   .repository_advisory
   | (if .severity == "critical" or .severity == "high" or .severity == "medium" or .severity == "low"
       then "\(.severity | capitalize) severity" else "Unknown severity" end) as $severity
-  | message("\(.ghsa_id): \(.summary // "" | gsub("\\s+"; " "))"; "\($severity) (Advisory)";
-      {html_url: .html_url}; null; 0; 13706287)
+  | (if .state == "triage" or .state == "draft" or .state == "published" or .state == "closed" or .state == "withdrawn"
+      then "\(.state | capitalize) advisory" else "Advisory" end) as $state
+  | message(.ghsa_id; "\($severity) (\($state))"; {html_url: .html_url}; null; 0; 13706287)
 else error("Unsupported event: \($event)") end

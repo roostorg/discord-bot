@@ -61,7 +61,7 @@ GitHub Actions has no event for repository security advisories, so post them fro
           payload-path: ${{ runner.temp }}/advisories.json
 ```
 
-`payload-path` holds one or more JSON objects shaped like the `repository_advisory` webhook payload, `{"repository_advisory": {...}}`, and each becomes one message. A message contains only the advisory's GHSA ID, title, severity and link, never its description, affected code or reporter, so it's suitable for unpublished advisories. Use a webhook for a private channel.
+`payload-path` holds one or more JSON objects shaped like the `repository_advisory` webhook payload, `{"repository_advisory": {...}}`, and each becomes one message. A message contains only the advisory's GHSA ID, state, severity and link, never its title, description, affected code or reporter, so it's suitable for unpublished advisories. Use a webhook for a private channel.
 
 ## Security
 
