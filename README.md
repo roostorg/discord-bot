@@ -9,6 +9,7 @@ Posts to a Discord channel when:
 - An issue is opened
 - A pull request is opened (or marked ready for review)
 - A release is published
+- A repository security advisory is reported or drafted (from a scheduled workflow; see below)
 
 Filters out bots. Uses the GitHub user's username and avatar where possible for nice attribution/integration, especially when contributors use a similar identity across platforms.
 
@@ -47,6 +48,20 @@ jobs:
 ```
 
 You can omit any triggers you don't want; e.g. `release` if you only care about issues and PRs.
+
+## Security advisories
+
+GitHub Actions has no event for repository security advisories, so post them from a scheduled workflow that lists new advisories and passes them to this action:
+
+```yaml
+      - uses: roostorg/discord-bot@main
+        with:
+          webhook-url: ${{ secrets.SECURITY_DISCORD_WEBHOOK }}
+          event: repository_advisory
+          payload-path: ${{ runner.temp }}/advisories.json
+```
+
+`payload-path` holds one or more JSON objects shaped like the `repository_advisory` webhook payload, `{"repository_advisory": {...}}`, and each becomes one message. A message contains only the advisory's GHSA ID, state, severity and link, never its title, description, affected code or reporter, so it's suitable for unpublished advisories. Use a webhook for a private channel.
 
 ## Security
 

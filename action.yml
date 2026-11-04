@@ -1,18 +1,29 @@
 name: Discord notifications
-description: Post new issues, pull requests, and releases to a Discord channel
+description: Post new issues, pull requests, releases, and security advisories to a Discord channel
 inputs:
   webhook-url:
     description: Discord webhook URL for the channel; store it as a secret
     required: true
+  event:
+    description: Event name to format the payload as; defaults to the event that triggered the workflow
+    required: false
+    default: ''
+  payload-path:
+    description: File of one or more event payloads, one message each; defaults to the triggering event's payload
+    required: false
+    default: ''
 runs:
   using: composite
   steps:
     - name: Build Discord message
       shell: bash
+      env:
+        EVENT: ${{ inputs.event }}
+        PAYLOAD: ${{ inputs.payload-path }}
       run: |
-        jq --arg event "$GITHUB_EVENT_NAME" \
+        jq --compact-output --arg event "${EVENT:-$GITHUB_EVENT_NAME}" \
           --from-file "$GITHUB_ACTION_PATH/message.jq" \
-          "$GITHUB_EVENT_PATH" > "$RUNNER_TEMP/discord.json"
+          "${PAYLOAD:-$GITHUB_EVENT_PATH}" > "$RUNNER_TEMP/discord.json"
 
     - name: Send to Discord
       shell: bash
@@ -27,7 +38,13 @@ runs:
           echo "::error::webhook-url is empty; is the secret set, and is this a pull_request event from a fork?"
           exit 1
         fi
-        curl --fail-with-body --silent --show-error \
-          --header "Content-Type: application/json" \
-          --data "@${RUNNER_TEMP}/discord.json" \
-          "${WEBHOOK}?with_components=true"
+        first=true
+        while IFS= read -r message; do
+          # Stay under Discord's webhook rate limit when posting several
+          $first || sleep 1
+          first=false
+          printf '%s' "$message" | curl --fail-with-body --silent --show-error \
+            --header "Content-Type: application/json" \
+            --data @- \
+            "${WEBHOOK}?with_components=true"
+        done < "$RUNNER_TEMP/discord.json"
