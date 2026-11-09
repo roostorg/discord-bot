@@ -15,36 +15,12 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Build Discord message
-      shell: bash
-      env:
-        EVENT: ${{ inputs.event }}
-        PAYLOAD: ${{ inputs.payload-path }}
-      run: |
-        jq --compact-output --arg event "${EVENT:-$GITHUB_EVENT_NAME}" \
-          --from-file "$GITHUB_ACTION_PATH/message.jq" \
-          "${PAYLOAD:-$GITHUB_EVENT_PATH}" > "$RUNNER_TEMP/discord.json"
-
     - name: Send to Discord
       shell: bash
       env:
         WEBHOOK: ${{ inputs.webhook-url }}
+        EVENT: ${{ inputs.event }}
+        PAYLOAD: ${{ inputs.payload-path }}
       run: |
-        if [ ! -s "$RUNNER_TEMP/discord.json" ]; then
-          echo "Skipping: draft or bot pull request"
-          exit 0
-        fi
-        if [ -z "$WEBHOOK" ]; then
-          echo "::error::webhook-url is empty; is the secret set, and is this a pull_request event from a fork?"
-          exit 1
-        fi
-        first=true
-        while IFS= read -r message; do
-          # Stay under Discord's webhook rate limit when posting several
-          $first || sleep 1
-          first=false
-          printf '%s' "$message" | curl --fail-with-body --silent --show-error \
-            --header "Content-Type: application/json" \
-            --data @- \
-            "${WEBHOOK}?with_components=true"
-        done < "$RUNNER_TEMP/discord.json"
+        EVENT="${EVENT:-$GITHUB_EVENT_NAME}" PAYLOAD="${PAYLOAD:-$GITHUB_EVENT_PATH}" \
+          bash "$GITHUB_ACTION_PATH/post.sh"
