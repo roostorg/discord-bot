@@ -4,8 +4,14 @@
 
 def truncate($n): if length > $n then .[:$n - 1] + "…" else . end;
 def clean: (. // "") | gsub("\r"; "") | gsub("<!--[\\s\\S]*?-->"; "") | gsub("\n{3,}"; "\n\n") | gsub("^\\s+|\\s+$"; "");
-# Keep titles literal inside the markdown link
-def escape: gsub("(?<c>[\\\\*_~`|\\[\\]<>])"; "\\\(.c)");
+# Discord ignores escapes inside link text, so these only work outside a link
+def escape: gsub("(?<c>[\\\\*_~`|\\[\\]<>@])"; "\\\(.c)");
+def unclosed_bracket: if test("\\[[^\\[\\]]*\\]") then gsub("\\[[^\\[\\]]*\\]"; "") | unclosed_bracket else test("\\[") end;
+# Discord refuses to link text containing URLs, mass or raw mentions, or an unclosed [
+def linkable: (test("://|@everyone|@here|<[@#]") or unclosed_bracket) | not;
+def heading($title; $suffix; $url):
+  if $title | linkable then "### [\($title) • \($suffix)](\($url))"
+  else "### \($title | escape) • [\($suffix)](\($url))" end;
 # Discord rejects webhook names containing these, so fall back to the webhook default
 def sender($user): if $user == null then {} else {avatar_url: $user.avatar_url}
   + if $user.login | test("discord|clyde"; "i") then {} else {username: "@\($user.login) • GitHub"} end end;
@@ -19,7 +25,7 @@ def message($title; $suffix; $item; $user; $length; $color):
       accent_color: $color,
       components: [{
         type: 10,
-        content: ("### [\($title | truncate(200) | escape) • \($suffix)](\($item.html_url))"
+        content: (heading($title | truncate(200); $suffix; $item.html_url)
           + if $body == "" then "" else "\n\($body)" end)
       }]
     }],
