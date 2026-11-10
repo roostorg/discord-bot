@@ -108,6 +108,8 @@ The workflow needs no GitHub token permissions; it only reads the event payload 
 
 - **Posts aren't updated** when they change, e.g. when an issue or PR is closed, since that would require tracking state.
 
+- **Markdown in titles renders**, e.g. `code`, since Discord ignores escapes inside link text. Discord won't link text containing an unclosed `[`, a URL, `@everyone`/`@here`, or a raw `<@…>` mention, so for those titles only the number is linked.
+
 - **GitHub usernames containing "discord" or "clyde"** fall back to the webhook's default name, since Discord doesn't allow those words in webhook names.
 
 ## Development
