@@ -1,0 +1,50 @@
+name: Discord security advisory notifications
+description: Post each new repository security advisory in triage or draft to a Discord channel, once
+inputs:
+  webhook-url:
+    description: Discord webhook URL of a private channel; store it as a secret. Also keys the hashes in the cached state.
+    required: true
+  advisory-read-token:
+    description: Token that can read this repository's unpublished security advisories; store it as a secret
+    required: true
+runs:
+  using: composite
+  steps:
+    # Callers' environment secrets may not be set up yet; skip without output.
+    - name: Restore posted-advisory state
+      if: inputs.webhook-url != '' && inputs.advisory-read-token != ''
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ${{ runner.temp }}/security-advisory-notify/state.json
+        key: security-advisory-notify-${{ github.run_id }}-${{ github.run_attempt }}
+        restore-keys: security-advisory-notify-
+
+    - name: List new advisories
+      id: list
+      if: inputs.webhook-url != '' && inputs.advisory-read-token != ''
+      shell: bash
+      env:
+        ADVISORY_READ_TOKEN: ${{ inputs.advisory-read-token }}
+        STATE_KEY: ${{ inputs.webhook-url }}
+        STATE_FILE: ${{ runner.temp }}/security-advisory-notify/state.json
+        PAYLOAD_FILE: ${{ runner.temp }}/security-advisory-notify/advisories.jsonl
+      run: python3 "$GITHUB_ACTION_PATH/list_new_security_advisories.py"
+
+    - name: Post new advisories
+      if: steps.list.outputs.post == 'true'
+      shell: bash
+      env:
+        WEBHOOK: ${{ inputs.webhook-url }}
+        EVENT: repository_advisory
+        PAYLOAD: ${{ runner.temp }}/security-advisory-notify/advisories.jsonl
+      run: bash "$GITHUB_ACTION_PATH/../post.sh"
+
+    # Only after posting succeeds, so a failed post is retried next run. If a
+    # post fails partway through a batch, the advisories posted before it are
+    # posted again on the next run: a duplicate rather than a missed alert.
+    - name: Save posted-advisory state
+      if: steps.list.outputs.changed == 'true'
+      uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ${{ runner.temp }}/security-advisory-notify/state.json
+        key: security-advisory-notify-${{ github.run_id }}-${{ github.run_attempt }}
