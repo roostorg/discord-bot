@@ -8,6 +8,7 @@ Posts to a Discord channel when:
 
 - An issue is opened
 - A pull request is opened (or marked ready for review)
+- A discussion is started
 - A release is published
 - A repository security advisory is reported or drafted (from a scheduled workflow; see below)
 
@@ -33,6 +34,8 @@ on:
     types: [opened]
   pull_request_target:
     types: [opened, ready_for_review]
+  discussion:
+    types: [created]
   release:
     types: [published]
 
@@ -47,7 +50,7 @@ jobs:
           webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
 ```
 
-You can omit any triggers you don't want; e.g. `release` if you only care about issues and PRs.
+You can omit any triggers you don't want; e.g. `release` if you only care about issues and PRs, or `discussion` if your repo doesn't have discussions enabled.
 
 ## Security advisories
 
