@@ -21,6 +21,9 @@ def clean:
   (. // "")
   | gsub("\r"; "")
   | gsub("<!--[\\s\\S]*?-->"; "")  # HTML comments, e.g. from templates
+  | gsub("<picture\\b[\\s\\S]*?</picture>"; "🖼️"; "i") # picture tags
+  | gsub("<img\\b[^>]*>"; "🖼️"; "i") # img tags
+  | gsub("!\\[[^\\]]*\\]\\([^)]*\\)"; "🖼️") # Markdown images
   | gsub("\n{3,}"; "\n\n")
   | gsub("^\\s+|\\s+$"; "");
 
