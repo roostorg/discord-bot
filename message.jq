@@ -7,6 +7,7 @@ def green: 2066493;    # #1f883d, issues
 def yellow: 10118912;  # #9a6700, pull requests
 def blue: 616922;      # #0969da, releases
 def red: 13706287;     # #d1242f, security advisories
+def purple: 8540383;   # #8250df, discussions
 
 # Discord message components: https://docs.discord.com/developers/components/reference
 def is_components_v2: 32768;  # message flag, 1 << 15
@@ -85,6 +86,16 @@ def pull_request_message:
       | message
     end;
 
+# Labeled by category, e.g. "#12 (Q&A)"
+def discussion_message:
+  .discussion
+  | if .user.type == "Bot" then empty
+    else
+      {title, url: .html_url, body, user,
+       suffix: "#\(.number) (\(.category.name // "Discussion"))", body_length: 500, color: purple}
+      | message
+    end;
+
 # Titled by the release name, or the tag if unnamed; shows the tag too if they differ
 def release_message:
   .release
@@ -111,6 +122,7 @@ def repository_advisory_message:
 
 if $event == "issues" then issue_message
 elif $event | IN("pull_request_target", "pull_request") then pull_request_message
+elif $event == "discussion" then discussion_message
 elif $event == "release" then release_message
 elif $event == "repository_advisory" then repository_advisory_message
 else error("Unsupported event: \($event)")

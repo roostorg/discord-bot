@@ -17,7 +17,7 @@ jq --compact-output --arg event "$EVENT" \
   "$PAYLOAD" > "$messages"
 
 if [ ! -s "$messages" ]; then
-  echo "Skipping: draft or bot pull request"
+  echo "Skipping: draft pull request, or posted by a bot"
   exit 0
 fi
 if [ -z "${WEBHOOK:-}" ]; then

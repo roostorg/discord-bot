@@ -1,5 +1,5 @@
 name: Discord notifications
-description: Post new issues, pull requests, releases, and security advisories to a Discord channel
+description: Post new issues, pull requests, discussions, releases, and security advisories to a Discord channel
 inputs:
   webhook-url:
     description: Discord webhook URL for the channel; store it as a secret
