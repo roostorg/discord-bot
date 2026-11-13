@@ -52,6 +52,32 @@ jobs:
 
 You can omit any triggers you don't want; e.g. `release` if you only care about issues and PRs, or `discussion` if your repo doesn't have discussions enabled.
 
+### Minimal layout
+
+By default, each post is a colored card with the title and the start of the body. For busy channels, `layout: minimal` posts a single line with the linked title instead:
+
+```yaml
+      - uses: roostorg/discord-bot@main
+        with:
+          webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          layout: minimal
+```
+
+To mix layouts, e.g. full cards for releases but minimal posts for everything else, use two steps:
+
+```yaml
+    steps:
+      - uses: roostorg/discord-bot@main
+        if: github.event_name == 'release'
+        with:
+          webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+      - uses: roostorg/discord-bot@main
+        if: github.event_name != 'release'
+        with:
+          webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          layout: minimal
+```
+
 ## Security advisories
 
 GitHub Actions has no event for repository security advisories, so the `security-advisories` action polls for them from a scheduled workflow. Each new advisory in triage or draft is posted once, oldest first. A message contains only the advisory's GHSA ID, state, severity and link, never its title, description, affected code or reporter, so it's suitable for unpublished advisories. Use a webhook for a private channel.
