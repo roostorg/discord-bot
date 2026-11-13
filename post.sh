@@ -7,12 +7,13 @@
 #   WEBHOOK  Discord webhook URL
 #   EVENT    event name to format the payloads as
 #   PAYLOAD  file of one or more event payloads
+#   LAYOUT   "full" (default) or "minimal"
 set -euo pipefail
 
 messages="$(mktemp "${RUNNER_TEMP:-${TMPDIR:-/tmp}}/discord.XXXXXX")"
 trap 'rm -f "$messages"' EXIT
 
-jq --compact-output --arg event "$EVENT" \
+jq --compact-output --arg event "$EVENT" --arg layout "${LAYOUT:-full}" \
   --from-file "$(dirname "$0")/message.jq" \
   "$PAYLOAD" > "$messages"
 

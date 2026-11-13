@@ -1,6 +1,7 @@
 # Builds a Discord webhook message from each GitHub event payload in the input,
 # or outputs nothing for events that should be skipped. Usage:
-#   jq --compact-output --arg event "$GITHUB_EVENT_NAME" --from-file message.jq "$GITHUB_EVENT_PATH"
+#   jq --compact-output --arg event "$GITHUB_EVENT_NAME" --arg layout full \
+#     --from-file message.jq "$GITHUB_EVENT_PATH"
 
 # Colors from GitHub's palette
 def green: 2066493;    # #1f883d, issues
@@ -41,11 +42,11 @@ def has_unclosed_bracket:
 def linkable:
   (test("://|@everyone|@here|<[@#]") or has_unclosed_bracket) | not;
 
-# "### [Title • #1 (PR)](url)", or "### Title • [#1 (PR)](url)" if the title can't be linked
-def heading($title; $suffix; $url):
+# "[Title • #1 (PR)](url)", or "Title • [#1 (PR)](url)" if the title can't be linked
+def title_link($title; $suffix; $url):
   if $title | linkable
-  then "### [\($title) • \($suffix)](\($url))"
-  else "### \($title | escape_markdown) • [\($suffix)](\($url))"
+  then "[\($title) • \($suffix)](\($url))"
+  else "\($title | escape_markdown) • [\($suffix)](\($url))"
   end;
 
 # Discord rejects webhook names containing these, so fall back to the webhook default
@@ -57,20 +58,27 @@ def sender($user):
 
 # Takes {title, suffix, url, body, body_length, user, color}. Uses components
 # instead of embeds so posts still show for people with embeds turned off.
+# The full layout is a colored card with a heading and body; minimal is one line.
 def message:
   . as $m
-  | ($m.body | clean | truncate($m.body_length)) as $body
+  | title_link($m.title | truncate(200); $m.suffix; $m.url) as $link
+  | (if $layout == "full" then
+      ($m.body | clean | truncate($m.body_length)) as $body
+      | [{
+          type: container,
+          accent_color: $m.color,
+          components: [{
+            type: text_display,
+            content: ("### \($link)" + if $body == "" then "" else "\n\($body)" end)
+          }]
+        }]
+    elif $layout == "minimal" then
+      [{type: text_display, content: $link}]
+    else error("Unsupported layout: \($layout)")
+    end) as $components
   | sender($m.user) + {
       flags: is_components_v2,
-      components: [{
-        type: container,
-        accent_color: $m.color,
-        components: [{
-          type: text_display,
-          content: (heading($m.title | truncate(200); $m.suffix; $m.url)
-            + if $body == "" then "" else "\n\($body)" end)
-        }]
-      }],
+      components: $components,
       allowed_mentions: {parse: []}
     };
 

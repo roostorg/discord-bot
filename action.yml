@@ -12,6 +12,10 @@ inputs:
     description: File of one or more event payloads, one message each; defaults to the triggering event's payload
     required: false
     default: ''
+  layout:
+    description: "Message layout: `full` (a card with the title and body) or `minimal` (one line with the linked title)"
+    required: false
+    default: full
 runs:
   using: composite
   steps:
@@ -21,6 +25,7 @@ runs:
         WEBHOOK: ${{ inputs.webhook-url }}
         EVENT: ${{ inputs.event }}
         PAYLOAD: ${{ inputs.payload-path }}
+        LAYOUT: ${{ inputs.layout }}
       run: |
         EVENT="${EVENT:-$GITHUB_EVENT_NAME}" PAYLOAD="${PAYLOAD:-$GITHUB_EVENT_PATH}" \
           bash "$GITHUB_ACTION_PATH/post.sh"
